@@ -1,4 +1,4 @@
-export const IS_DEV = true;
+export const IS_DEV = false;
 export const MIN_VIEW_PERCENTAGE = 30;
 
 export const FORBIDDEN_HOSTNAMES = [
