@@ -60,8 +60,7 @@ async function createIconObjectUrl() {
     const svg = generateSVG(color);
 
     const blob = new Blob([svg], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
-    iconObjectUrl = url;
+    iconObjectUrl = URL.createObjectURL(blob);
   } catch (err) {
     console.error("Could not create icon object URL:", err);
   }
@@ -90,7 +89,7 @@ async function updatePageIcon(tabId: BrowserTabId) {
     if (!iconUrl) return;
 
     if (browser.pageAction) {
-      browser.pageAction.setIcon({
+      await browser.pageAction.setIcon({
         path: {
           32: iconUrl
         },
@@ -124,7 +123,7 @@ async function updateTabFavicon(tabId: BrowserTabId) {
     };
 
     try {
-      browser.scripting.executeScript({
+      await browser.scripting.executeScript({
         target: { tabId },
         func: changeFaviconScript,
         args: [iconUrl]
@@ -146,6 +145,6 @@ async function updateTabFavicon(tabId: BrowserTabId) {
  */
 export async function updateIcons(tabId: number | undefined) {
   if (!tabId) return;
-  updatePageIcon(tabId as BrowserTabId);
-  updateTabFavicon(tabId as BrowserTabId);
+  void updatePageIcon(tabId as BrowserTabId);
+  void updateTabFavicon(tabId as BrowserTabId);
 }

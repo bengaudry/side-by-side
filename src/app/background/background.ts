@@ -8,24 +8,10 @@ import { createContextMenu } from "./lib/contextMenu";
 
 console.info("[background.ts] > Loaded");
 
-async function refreshIconsForAllTabs() {
-  const tabs = await browser.tabs.query({});
-  for (const tab of tabs) {
-    if (tab.id !== undefined) {
-      updateIcons(tab.id);
-    }
-  }
-}
-
-browser.runtime.onInstalled.addListener(async () => {
-  await refreshIconsForAllTabs();
-});
-
 browser.theme.onUpdated.addListener(async ({ theme }) => {
   const context = BackgroundContext.getInstance();
   const themeColors = await getThemeColors(theme);
   context.setThemeColors(themeColors);
-  await refreshIconsForAllTabs();
 });
 
 /* ===== Listeners for page icon & tab icon ===== */
@@ -37,7 +23,7 @@ browser.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
 });
 
 // Remove X-Frame-Options and modify Content-Security-Policy headers
-// because some pages prevent being renderered into iframes
+// because some pages prevent being rendered into iframes
 browser.webRequest.onHeadersReceived.addListener(
   function (details) {
     let responseHeaders = details.responseHeaders;
