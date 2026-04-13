@@ -8,22 +8,32 @@ import { createContextMenu } from "./lib/contextMenu";
 
 console.info("[background.ts] > Loaded");
 
-/* ===== Listeners for page icon & tab icon ===== */
-
-browser.tabs.onCreated.addListener((tab) => {
-  updateIcons(tab.id);
-});
-
-// Also on updated (e.g. URL change)
-browser.tabs.onUpdated.addListener((tabId, changeInfo) => {
-  if (changeInfo.status === "complete") {
-    updateIcons(tabId);
+async function refreshIconsForAllTabs() {
+  const tabs = await browser.tabs.query({});
+  for (const tab of tabs) {
+    if (tab.id !== undefined) {
+      updateIcons(tab.id);
+    }
   }
+}
+
+browser.runtime.onInstalled.addListener(async () => {
+  await refreshIconsForAllTabs();
 });
 
-// When switching tabs
-browser.tabs.onActivated.addListener(({ tabId }) => {
-  updateIcons(tabId);
+browser.theme.onUpdated.addListener(async ({ theme }) => {
+  const context = BackgroundContext.getInstance();
+  const themeColors = await getThemeColors(theme);
+  context.setThemeColors(themeColors);
+  await refreshIconsForAllTabs();
+});
+
+/* ===== Listeners for page icon & tab icon ===== */
+// Recompute icon state after navigation/reload completes.
+browser.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
+  if (changeInfo.status === "complete") {
+    await updateIcons(tabId);
+  }
 });
 
 // Remove X-Frame-Options and modify Content-Security-Policy headers
@@ -72,7 +82,7 @@ async function fetchTabs(sender: BrowserMessageSender, sendResponse: (response?:
   } catch (error) {
     console.error("background.ts > Error while fetching tabs", error);
     if (sender.tab && sender.tab.id) {
-      browser.tabs.sendMessage(sender.tab.id, {
+      await browser.tabs.sendMessage(sender.tab.id, {
         type: "TABS_DATA",
         error: error instanceof Error ? error.message : "Unknown error"
       });
@@ -118,7 +128,7 @@ browser.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
 
   switch (message.type) {
     case "INIT_EXT":
-      handleInitializeExtension(message.side);
+      await handleInitializeExtension(message.side);
       return null;
 
     // Fetch opened tabs on browser to make suggestions to user
@@ -134,11 +144,11 @@ browser.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     case "REQUEST_CLOSE_SPLIT":
       const urlToKeep = message.keep === "left" ? context.getLeftUrl() : context.getRightUrl();
       if (urlToKeep && tab?.id !== undefined) {
-        browser.tabs.create({
+        await browser.tabs.create({
           url: urlToKeep,
           active: true
         });
-        browser.tabs.remove(tab?.id);
+        await browser.tabs.remove(tab?.id);
         context.setTab(null);
       }
       return null;
@@ -162,34 +172,23 @@ browser.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   }
 });
 
-browser.theme.onUpdated.addListener(function ({ theme }) {
-  const context = BackgroundContext.getInstance();
-
-  getThemeColors(theme).then((themeColors) => {
-    context.setThemeColors(themeColors);
-    updateIcons(context.getTab()?.id);
-  });
-});
-
-function getActiveTab(): Promise<BrowserTab | null> {
-  return browser.tabs
-    .query({
+async function getActiveTab(): Promise<BrowserTab | null> {
+  try {
+    const tabs = await browser.tabs.query({
       active: true,
       currentWindow: true
-    })
-    .then((tabs) => {
-      if (tabs.length > 0) {
-        return tabs[0] ?? null;
-      }
-      return null;
-    })
-    .catch((error) => {
-      console.error("background.ts > Error while getting active tab:", error);
-      return null;
     });
+    if (tabs.length > 0) {
+      return tabs[0] ?? null;
+    }
+    return null;
+  } catch (error) {
+    console.error("background.ts > Error while getting active tab:", error);
+    return null;
+  }
 }
 
-const handleInitializeExtension = async (side: Side) => {
+async function handleInitializeExtension(side: Side) {
   try {
     // Get the current tab's URL
     const activeTab = await getActiveTab();
@@ -205,7 +204,7 @@ const handleInitializeExtension = async (side: Side) => {
     const context = BackgroundContext.getInstance();
 
     if (Boolean(context.getSetting("close-tab-before-opening"))) {
-      browser.tabs.remove(activeTab.id);
+      await browser.tabs.remove(activeTab.id);
     }
 
     const themeColors = await getThemeColors();
@@ -241,4 +240,4 @@ const handleInitializeExtension = async (side: Side) => {
   } catch (err) {
     console.error("background.ts > Error while initializing extension :", err);
   }
-};
+}
