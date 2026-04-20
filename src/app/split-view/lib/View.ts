@@ -105,20 +105,14 @@ export class View {
     return this.url;
   }
 
-  /** Load a new URL into the specified side's split */
-  public static loadUrl(side: Side, newUrl: string) {
-    const splitInstance = side === "left" ? View.leftSplitInstance : View.rightSplitInstance;
-    return splitInstance.loadUrl(newUrl);
-  }
-
   /** Load a new URL into this split's iframe */
   public loadUrl(newUrl: string | null | undefined): boolean {
     if (!newUrl) return false;
     if (!this.iframeRef) return false;
 
-    this.iframeRef.classList.add("loading");
+    this.iframeRef.classList.add("iframe-content-loading");
     this.iframeRef.onload = () => {
-      this.iframeRef?.classList.remove("loading");
+      this.iframeRef?.classList.remove("iframe-content-loading");
     };
 
     try {

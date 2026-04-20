@@ -2,7 +2,6 @@ import { changeCssVariableValue } from "shared/colors/utils";
 import { MIN_VIEW_PERCENTAGE } from "shared/constants";
 import { Observer } from "shared/observability/Observer";
 import type { Orientation, Side } from "shared/types";
-import { Searchbar } from "./Searchbar";
 import { SplitContext } from "./SplitContext";
 import { View } from "./View";
 
@@ -18,8 +17,8 @@ export class SplitView implements Observer<SplitContext> {
 
   private orientation: Orientation = "horizontal";
 
-  private leftSplit: View;
-  private rightSplit: View;
+  private readonly leftSplit: View;
+  private readonly rightSplit: View;
 
   private isUserResizingViews = false;
 
@@ -68,15 +67,6 @@ export class SplitView implements Observer<SplitContext> {
 
   private static getResizeDraggableRef() {
     return document.querySelector<HTMLDivElement>("#resize-draggable");
-  }
-
-  public getInstanceOfSide(side: Side): View {
-    if ("left" === side) return this.leftSplit;
-    return this.rightSplit;
-  }
-
-  public loadUrl(side: Side, url: string) {
-    this.getInstanceOfSide(side).loadUrl(url);
   }
 
   public update(context: SplitContext) {
