@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Side by Side",
-  "version": "2.3.5",
+  "version": "2.3.6",
   "description": "Opens two tabs into a split view that can be resized.",
   "permissions": [
     "tabs",
