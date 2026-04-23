@@ -87,6 +87,7 @@ iframe {
   height: 100%;
   width: 100%;
   border: none;
+  background-color: white;
 }
 
 .iframe-container:has(> .iframe-content-loading)::before {
